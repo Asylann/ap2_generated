@@ -27,6 +27,7 @@ type PaymentRequest struct {
 	OrderId       string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
 	Amount        int64                  `protobuf:"varint,2,opt,name=amount,proto3" json:"amount,omitempty"` // in cents
 	Currency      string                 `protobuf:"bytes,3,opt,name=currency,proto3" json:"currency,omitempty"`
+	CustomerEmail string                 `protobuf:"bytes,4,opt,name=customer_email,json=customerEmail,proto3" json:"customer_email,omitempty"` // NEW: forwarded by Order Service
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -78,6 +79,13 @@ func (x *PaymentRequest) GetAmount() int64 {
 func (x *PaymentRequest) GetCurrency() string {
 	if x != nil {
 		return x.Currency
+	}
+	return ""
+}
+
+func (x *PaymentRequest) GetCustomerEmail() string {
+	if x != nil {
+		return x.CustomerEmail
 	}
 	return ""
 }
@@ -238,15 +246,94 @@ func (x *ListPaymentsResponse) GetPayments() []*PaymentResponse {
 	return nil
 }
 
+// PaymentCompletedEvent is the contract for the RabbitMQ AMQP event.
+// Published by Payment Service, consumed by Notification Service.
+type PaymentCompletedEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"` // UUID — used as idempotency key
+	OrderId       string                 `protobuf:"bytes,2,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
+	Amount        int64                  `protobuf:"varint,3,opt,name=amount,proto3" json:"amount,omitempty"` // in cents
+	CustomerEmail string                 `protobuf:"bytes,4,opt,name=customer_email,json=customerEmail,proto3" json:"customer_email,omitempty"`
+	Status        string                 `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PaymentCompletedEvent) Reset() {
+	*x = PaymentCompletedEvent{}
+	mi := &file_payment_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PaymentCompletedEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PaymentCompletedEvent) ProtoMessage() {}
+
+func (x *PaymentCompletedEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PaymentCompletedEvent.ProtoReflect.Descriptor instead.
+func (*PaymentCompletedEvent) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *PaymentCompletedEvent) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+func (x *PaymentCompletedEvent) GetOrderId() string {
+	if x != nil {
+		return x.OrderId
+	}
+	return ""
+}
+
+func (x *PaymentCompletedEvent) GetAmount() int64 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+func (x *PaymentCompletedEvent) GetCustomerEmail() string {
+	if x != nil {
+		return x.CustomerEmail
+	}
+	return ""
+}
+
+func (x *PaymentCompletedEvent) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
 var File_payment_proto protoreflect.FileDescriptor
 
 const file_payment_proto_rawDesc = "" +
 	"\n" +
-	"\rpayment.proto\x12\apayment\x1a\x1fgoogle/protobuf/timestamp.proto\"_\n" +
+	"\rpayment.proto\x12\apayment\x1a\x1fgoogle/protobuf/timestamp.proto\"\x86\x01\n" +
 	"\x0ePaymentRequest\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x16\n" +
 	"\x06amount\x18\x02 \x01(\x03R\x06amount\x12\x1a\n" +
-	"\bcurrency\x18\x03 \x01(\tR\bcurrency\"\x83\x01\n" +
+	"\bcurrency\x18\x03 \x01(\tR\bcurrency\x12%\n" +
+	"\x0ecustomer_email\x18\x04 \x01(\tR\rcustomerEmail\"\x83\x01\n" +
 	"\x0fPaymentResponse\x12\x1d\n" +
 	"\n" +
 	"payment_id\x18\x01 \x01(\tR\tpaymentId\x12\x16\n" +
@@ -259,7 +346,14 @@ const file_payment_proto_rawDesc = "" +
 	"\n" +
 	"max_amount\x18\x02 \x01(\x03R\tmaxAmount\"L\n" +
 	"\x14ListPaymentsResponse\x124\n" +
-	"\bpayments\x18\x01 \x03(\v2\x18.payment.PaymentResponseR\bpayments2\xa2\x01\n" +
+	"\bpayments\x18\x01 \x03(\v2\x18.payment.PaymentResponseR\bpayments\"\xa8\x01\n" +
+	"\x15PaymentCompletedEvent\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x19\n" +
+	"\border_id\x18\x02 \x01(\tR\aorderId\x12\x16\n" +
+	"\x06amount\x18\x03 \x01(\x03R\x06amount\x12%\n" +
+	"\x0ecustomer_email\x18\x04 \x01(\tR\rcustomerEmail\x12\x16\n" +
+	"\x06status\x18\x05 \x01(\tR\x06status2\xa2\x01\n" +
 	"\x0ePaymentService\x12C\n" +
 	"\x0eProcessPayment\x12\x17.payment.PaymentRequest\x1a\x18.payment.PaymentResponse\x12K\n" +
 	"\fListPayments\x12\x1c.payment.ListPaymentsRequest\x1a\x1d.payment.ListPaymentsResponseB0Z.github.com/Asylann/ap2_generated;ap2_generatedb\x06proto3"
@@ -276,16 +370,17 @@ func file_payment_proto_rawDescGZIP() []byte {
 	return file_payment_proto_rawDescData
 }
 
-var file_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_payment_proto_goTypes = []any{
 	(*PaymentRequest)(nil),        // 0: payment.PaymentRequest
 	(*PaymentResponse)(nil),       // 1: payment.PaymentResponse
 	(*ListPaymentsRequest)(nil),   // 2: payment.ListPaymentsRequest
 	(*ListPaymentsResponse)(nil),  // 3: payment.ListPaymentsResponse
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
+	(*PaymentCompletedEvent)(nil), // 4: payment.PaymentCompletedEvent
+	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
 }
 var file_payment_proto_depIdxs = []int32{
-	4, // 0: payment.PaymentResponse.created_at:type_name -> google.protobuf.Timestamp
+	5, // 0: payment.PaymentResponse.created_at:type_name -> google.protobuf.Timestamp
 	1, // 1: payment.ListPaymentsResponse.payments:type_name -> payment.PaymentResponse
 	0, // 2: payment.PaymentService.ProcessPayment:input_type -> payment.PaymentRequest
 	2, // 3: payment.PaymentService.ListPayments:input_type -> payment.ListPaymentsRequest
@@ -309,7 +404,7 @@ func file_payment_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_payment_proto_rawDesc), len(file_payment_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
